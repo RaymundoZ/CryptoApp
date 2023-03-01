@@ -1,0 +1,46 @@
+databaseChangeLog:
+    - changeSet:
+        id: 1
+        author: Raymundo
+        changes:
+            -  createTable:
+                tableName: "_user"
+                columns:
+                    - column:
+                        name: id
+                        type: bigint
+                        autoIncrement: true
+                        constraints:
+                            primaryKey: true
+                            nullable: false
+                            unique: true
+                    - column:
+                          name: username
+                          type: varchar(15)
+                          constraints:
+                              nullable: false
+                              unique: true
+                    - column:
+                          name: email
+                          type: varchar(30)
+                          autoIncrement: true
+                          constraints:
+                              primaryKey: true
+                              nullable: false
+                              unique: true
+                    - column:
+                          name: secret_key
+                          type: varchar(40)
+                          autoIncrement: true
+                          constraints:
+                              primaryKey: true
+                              nullable: false
+                              unique: true
+                    - column:
+                          name: last_operation_date
+                          type: date
+                          autoIncrement: true
+                          constraints:
+                              primaryKey: true
+                              nullable: false
+                              unique: true
