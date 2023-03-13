@@ -1,9 +1,12 @@
 package com.raymundo.crypto.controller;
 
-import com.raymundo.crypto.dto.ErrorResponseDto;
-import com.raymundo.crypto.dto.MakeExchangeDto;
-import com.raymundo.crypto.dto.SecretKeyDto;
-import com.raymundo.crypto.dto.WithdrawDto;
+import com.raymundo.crypto.dto.request.DepositRequest;
+import com.raymundo.crypto.dto.request.MakeExchangeRequest;
+import com.raymundo.crypto.dto.response.DepositResponse;
+import com.raymundo.crypto.dto.response.ErrorResponse;
+import com.raymundo.crypto.dto.request.WithdrawRequest;
+import com.raymundo.crypto.dto.response.MakeExchangeResponse;
+import com.raymundo.crypto.dto.response.WithdrawResponse;
 import com.raymundo.crypto.exception.ExchangeException;
 import com.raymundo.crypto.exception.UserNotFoundException;
 import com.raymundo.crypto.exception.ValidationException;
@@ -18,7 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import java.util.Date;
 
 @RestController
 @AllArgsConstructor
@@ -27,28 +30,29 @@ public class OperationsController {
     private OperationsService operationsService;
 
     @PostMapping(value = "/deposit")
-    public ResponseEntity<Map<String, String>> makeDeposite(@RequestBody @Valid SecretKeyDto secretKeyDto,
-                                                            @RequestBody Map<String, String> value, BindingResult bindingResult) throws UserNotFoundException, ValidationException {
-        return ResponseEntity.ok(operationsService.makeDeposit(secretKeyDto, value, bindingResult));
+    public ResponseEntity<DepositResponse> makeDeposit(@RequestBody @Valid DepositRequest depositDto,
+                                                       BindingResult bindingResult) throws UserNotFoundException, ValidationException {
+        return ResponseEntity.ok(operationsService.makeDeposit(depositDto, bindingResult));
     }
 
     @PostMapping(value = "/withdraw")
-    public ResponseEntity<Map<String, String>> makeWithDraw(@RequestBody @Valid WithdrawDto withdrawDto,
-                                                            BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
+    public ResponseEntity<WithdrawResponse> makeWithDraw(@RequestBody @Valid WithdrawRequest withdrawDto,
+                                                         BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
         return ResponseEntity.ok(operationsService.makeWithdraw(withdrawDto, bindingResult));
     }
 
     @PostMapping(value = "/exchange")
-    public ResponseEntity<Map<String, String>> makeExchange(@RequestBody @Valid MakeExchangeDto makeExchangeDto,
-                                                            BindingResult bindingResult) throws UserNotFoundException, ExchangeException, WithdrawException, ValidationException {
+    public ResponseEntity<MakeExchangeResponse> makeExchange(@RequestBody @Valid MakeExchangeRequest makeExchangeDto,
+                                                             BindingResult bindingResult) throws UserNotFoundException, ExchangeException, WithdrawException, ValidationException {
         return ResponseEntity.ok(operationsService.makeExchange(makeExchangeDto, bindingResult));
     }
 
     @ExceptionHandler(value = {UserNotFoundException.class, WithdrawException.class, ExchangeException.class, ValidationException.class})
-    private ResponseEntity<ErrorResponseDto> handleException(Exception e) {
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto();
-        errorResponseDto.setMessage(e.getMessage());
-        errorResponseDto.setTimestamp(System.currentTimeMillis());
+    private ResponseEntity<ErrorResponse> handleException(Exception e) {
+        ErrorResponse errorResponseDto = ErrorResponse.builder()
+                .message(e.getMessage())
+                .timestamp(new Date())
+                .build();
         return ResponseEntity.badRequest().body(errorResponseDto);
     }
 

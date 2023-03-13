@@ -1,9 +1,12 @@
 package com.raymundo.crypto.controller;
 
-import com.raymundo.crypto.dto.AllCurrencyValueDto;
-import com.raymundo.crypto.dto.ChangeExchangeDto;
-import com.raymundo.crypto.dto.ErrorResponseDto;
-import com.raymundo.crypto.dto.OperationAmountDto;
+import com.raymundo.crypto.dto.request.AllCurrencyValueRequest;
+import com.raymundo.crypto.dto.request.ChangeExchangeRequest;
+import com.raymundo.crypto.dto.request.OperationAmountRequest;
+import com.raymundo.crypto.dto.response.AllCurrencyValueResponse;
+import com.raymundo.crypto.dto.response.ChangeExchangeResponse;
+import com.raymundo.crypto.dto.response.ErrorResponse;
+import com.raymundo.crypto.dto.response.OperationAmountResponse;
 import com.raymundo.crypto.exception.InvalidDateException;
 import com.raymundo.crypto.exception.ValidationException;
 import com.raymundo.crypto.service.AdminService;
@@ -13,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.Date;
 
 @RestController
 @AllArgsConstructor
@@ -22,27 +25,28 @@ public class AdminController {
     private AdminService adminService;
 
     @PostMapping(value = "/change_exchange")
-    public ResponseEntity<Map<String, String>> changeExchange(@RequestBody @Valid ChangeExchangeDto changeExchangeDto,
-                                                              @RequestBody Map<String, String> value, BindingResult bindingResult) throws ValidationException {
-        return ResponseEntity.ok(adminService.changeExchange(changeExchangeDto, value, bindingResult));
+    public ResponseEntity<ChangeExchangeResponse> changeExchange(@RequestBody @Valid ChangeExchangeRequest changeExchangeDto,
+                                                                 BindingResult bindingResult) throws ValidationException {
+        return ResponseEntity.ok(adminService.changeExchange(changeExchangeDto, bindingResult));
     }
 
     @GetMapping(value = "/currency_values")
-    public ResponseEntity<Map<String, String>> getAllCurencyValue(@RequestBody @Valid AllCurrencyValueDto allCurrencyValueDto, BindingResult bindingResult) throws ValidationException {
+    public ResponseEntity<AllCurrencyValueResponse> getAllCurencyValue(@RequestBody @Valid AllCurrencyValueRequest allCurrencyValueDto, BindingResult bindingResult) throws ValidationException {
         return ResponseEntity.ok(adminService.calcAllCurrencyValue(allCurrencyValueDto, bindingResult));
     }
 
     @GetMapping(value = "/operations")
-    public ResponseEntity<Map<String, String>> getOperationsAmount(@RequestBody @Valid OperationAmountDto operationAmountDto,
-                                                                   BindingResult bindingResult) throws InvalidDateException, ValidationException {
+    public ResponseEntity<OperationAmountResponse> getOperationsAmount(@RequestBody @Valid OperationAmountRequest operationAmountDto,
+                                                                       BindingResult bindingResult) throws InvalidDateException, ValidationException {
         return ResponseEntity.ok(adminService.getOperationsAmount(operationAmountDto, bindingResult));
     }
 
     @ExceptionHandler(value = {InvalidDateException.class, ValidationException.class})
-    private ResponseEntity<ErrorResponseDto> handleException(Exception e) {
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto();
-        errorResponseDto.setMessage(e.getMessage());
-        errorResponseDto.setTimestamp(System.currentTimeMillis());
+    private ResponseEntity<ErrorResponse> handleException(Exception e) {
+        ErrorResponse errorResponseDto = ErrorResponse.builder()
+                .message(e.getMessage())
+                .timestamp(new Date())
+                .build();
         return ResponseEntity.badRequest().body(errorResponseDto);
     }
 

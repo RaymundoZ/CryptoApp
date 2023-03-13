@@ -1,21 +1,21 @@
 package com.raymundo.crypto.entity;
 
-import com.raymundo.crypto.dto.UserDto;
+import com.raymundo.crypto.util.Role;
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
 @Table(name = "_user")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-public class UserEntity {
+public class UserEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,15 +28,48 @@ public class UserEntity {
     @Column(name = "email", nullable = false, unique = true, length = 30)
     private String email;
 
-    @Column(name = "secret_key", nullable = false, unique = true, length = 40)
-    private String secretKey;
+    @Column(name = "role", nullable = false)
+    @Enumerated(value = EnumType.STRING)
+    private Role role;
 
-    @Column(name = "last_operation_date")
-    @Temporal(value = TemporalType.DATE)
-    @DateTimeFormat(pattern = "dd.MM.yyyy")
-    private Date lastOperationDate;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.DETACH)
+    private List<OperationEntity> operations;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<CurrencyEntity> currencies;
 
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return null;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

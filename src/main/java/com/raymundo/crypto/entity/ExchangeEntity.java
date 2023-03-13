@@ -1,16 +1,14 @@
 package com.raymundo.crypto.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
 @Entity
 @Table(name = "_exchange")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 public class ExchangeEntity {
 

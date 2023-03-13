@@ -1,27 +1,27 @@
 package com.raymundo.crypto.entity;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.util.Date;
 
 @Entity
-@Table(name = "_currency")
+@Table(name = "_operation")
 @Data
 @NoArgsConstructor
-public class CurrencyEntity {
+public class OperationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    @JsonValue
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 10)
-    private String name;
-
-    @Column(name = "value", nullable = false)
-    private Double value;
+    @Temporal(value = TemporalType.DATE)
+    @DateTimeFormat(pattern = "dd.MM.yyyy")
+    @Column(name = "date")
+    private Date date;
 
     @ManyToOne
     private UserEntity user;

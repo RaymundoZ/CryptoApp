@@ -1,24 +1,22 @@
 package com.raymundo.crypto.service;
 
-import com.raymundo.crypto.dto.MakeExchangeDto;
-import com.raymundo.crypto.dto.SecretKeyDto;
-import com.raymundo.crypto.dto.WithdrawDto;
-import com.raymundo.crypto.entity.CurrencyEntity;
-import com.raymundo.crypto.entity.CurrencyPriceEntity;
-import com.raymundo.crypto.entity.ExchangeEntity;
-import com.raymundo.crypto.entity.UserEntity;
+import com.raymundo.crypto.dto.request.DepositRequest;
+import com.raymundo.crypto.dto.request.MakeExchangeRequest;
+import com.raymundo.crypto.dto.request.SecretKeyDto;
+import com.raymundo.crypto.dto.request.WithdrawRequest;
+import com.raymundo.crypto.dto.response.DepositResponse;
+import com.raymundo.crypto.dto.response.MakeExchangeResponse;
+import com.raymundo.crypto.dto.response.WithdrawResponse;
+import com.raymundo.crypto.entity.*;
 import com.raymundo.crypto.exception.ExchangeException;
 import com.raymundo.crypto.exception.UserNotFoundException;
 import com.raymundo.crypto.exception.ValidationException;
 import com.raymundo.crypto.exception.WithdrawException;
-import com.raymundo.crypto.repository.CurrencyPriceRepository;
-import com.raymundo.crypto.repository.CurrencyRepository;
-import com.raymundo.crypto.repository.ExchangeRepository;
-import com.raymundo.crypto.repository.UserRepository;
+import com.raymundo.crypto.repository.*;
+import com.raymundo.crypto.security.JwtService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.BindingResultUtils;
 import org.springframework.validation.ObjectError;
 
 import java.util.Date;
@@ -40,40 +38,39 @@ public class OperationsService {
     private CurrencyRepository currencyRepository;
     private ExchangeRepository exchangeRepository;
     private CurrencyPriceRepository currencyPriceRepository;
+    private OperationRepository operationRepository;
+    private JwtService jwtService;
 
-    public Map<String, String> makeDeposit(SecretKeyDto secretKeyDto, Map<String, String> value, BindingResult bindingResult) throws UserNotFoundException, ValidationException {
-        if(bindingResult.hasErrors())
-            for(ObjectError e: bindingResult.getAllErrors())
-                throw new ValidationException(e.getDefaultMessage());
-
-        UserEntity user = userRepository.getUserBySecretKey(secretKeyDto.getSecretKey()).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
+    public DepositResponse makeDeposit(DepositRequest depositDto, BindingResult bindingResult) throws UserNotFoundException, ValidationException {
+        validate(bindingResult);
+        UserEntity user = userRepository.getUserByUsername(jwtService.getUsername(depositDto.getSecretKey().getSecretKey())).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
         Map<String, String> result = new HashMap<>();
-        value.forEach((k, v) -> {
-            Optional<CurrencyEntity> optional = currencyRepository.getCurrencyByUserAndName(user, k);
-            CurrencyEntity currency;
-            if (optional.isPresent()) {
-                currency = optional.get();
-                currency.setValue(currency.getValue() + Double.parseDouble(v));
-            } else {
-                currency = new CurrencyEntity();
-                currency.setName(k);
-                currency.setValue(Double.parseDouble(v));
-                currency.setUser(user);
+        depositDto.getValues().forEach((k, v) -> {
+            if (!k.equals("secret_key")) {
+                Optional<CurrencyEntity> optional = currencyRepository.getCurrencyByUserAndName(user, k);
+                CurrencyEntity currency;
+                if (optional.isPresent()) {
+                    currency = optional.get();
+                    currency.setValue(currency.getValue() + Double.parseDouble(v));
+                } else {
+                    currency = new CurrencyEntity();
+                    currency.setName(k);
+                    currency.setValue(Double.parseDouble(v));
+                    currency.setUser(user);
+                }
+                result.put(currency.getName(), String.valueOf(currency.getValue()));
+                currencyRepository.save(currency);
             }
-            result.put(currency.getName(), String.valueOf(currency.getValue()));
-            currencyRepository.save(currency);
-
         });
         makeOperation(user);
-        return result;
+        return DepositResponse.builder()
+                .values(result)
+                .build();
     }
 
-    public Map<String, String> makeWithdraw(WithdrawDto withdraw, BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
-        if(bindingResult.hasErrors())
-            for(ObjectError e: bindingResult.getAllErrors())
-                throw new ValidationException(e.getDefaultMessage());
-
-        UserEntity user = userRepository.getUserBySecretKey(withdraw.getSecretKey()).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
+    public WithdrawResponse makeWithdraw(WithdrawRequest withdraw, BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
+        validate(bindingResult);
+        UserEntity user = userRepository.getUserByUsername(jwtService.getUsername(withdraw.getSecretKey().getSecretKey())).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
         Optional<CurrencyEntity> optional = currencyRepository.getCurrencyByUserAndName(user, withdraw.getCurrency());
         if (optional.isPresent()) {
             if (optional.get().getValue() >= withdraw.getCount()) {
@@ -87,39 +84,55 @@ public class OperationsService {
 
         makeOperation(user);
 
-        return Map.of(optional.get().getName(), String.valueOf(optional.get().getValue()));
+        return WithdrawResponse.builder()
+                .values(Map.of(optional.get().getName(), String.valueOf(optional.get().getValue())))
+                .build();
     }
 
-    public Map<String, String> makeExchange(MakeExchangeDto exchangeDto,
-                                            BindingResult bindingResult) throws UserNotFoundException, ExchangeException, WithdrawException, ValidationException {
-        if(bindingResult.hasErrors())
-            for(ObjectError e: bindingResult.getAllErrors())
-                throw new ValidationException(e.getDefaultMessage());
-
-        UserEntity user = userRepository.getUserBySecretKey(exchangeDto.getSecretKey()).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
+    public MakeExchangeResponse makeExchange(MakeExchangeRequest exchangeDto,
+                                             BindingResult bindingResult) throws UserNotFoundException, ExchangeException, WithdrawException, ValidationException {
+        validate(bindingResult);
+        UserEntity user = userRepository.getUserByUsername(jwtService.getUsername(exchangeDto.getSecretKey().getSecretKey())).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
         ExchangeEntity exchange = exchangeRepository.getExchangeByCurrencyName(exchangeDto.getCurrencyFrom())
-            .orElseThrow(() -> new ExchangeException(EXCHANGE_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new ExchangeException(EXCHANGE_NOT_FOUND_MESSAGE));
         CurrencyPriceEntity currencyPrice = currencyPriceRepository.getCurrencyPriceByExchangeAndName(exchange, exchangeDto.getCurrencyTo())
-            .orElseThrow(() -> new ExchangeException(CURRENCY_NOT_SET_MESSAGE));
-        makeWithdraw(new WithdrawDto() {{
-            setSecretKey(exchangeDto.getSecretKey());
-            setCurrency(exchangeDto.getCurrencyFrom());
-            setCount(exchangeDto.getAmount());
-        }}, bindingResult);
+                .orElseThrow(() -> new ExchangeException(CURRENCY_NOT_SET_MESSAGE));
+        makeWithdraw(WithdrawRequest.builder()
+                .secretKey(SecretKeyDto.builder()
+                        .secretKey(exchangeDto.getSecretKey().getSecretKey())
+                        .build())
+                .currency(exchangeDto.getCurrencyFrom())
+                .count(exchangeDto.getAmount())
+                .build(), bindingResult);
         Double amountTo = currencyPrice.getPrice() * exchangeDto.getAmount();
-        makeDeposit(new SecretKeyDto() {{
-            setSecretKey(user.getSecretKey());
-        }}, Map.of(exchangeDto.getCurrencyTo(), String.valueOf(amountTo)), bindingResult);
+        makeDeposit(DepositRequest.builder()
+                .secretKey(SecretKeyDto.builder()
+                        .secretKey(exchangeDto.getSecretKey().getSecretKey())
+                        .build())
+                .values(exchangeDto.getCurrencyTo(), String.valueOf(amountTo))
+                .build(), bindingResult);
 
         makeOperation(user);
 
-        return Map.of("currency_from", exchangeDto.getCurrencyFrom(), "currency_to", exchangeDto.getCurrencyTo(),
-            "amount_from", String.valueOf(exchangeDto.getAmount()), "amount_to", String.valueOf(amountTo));
+        return MakeExchangeResponse.builder()
+                .currencyFrom(exchangeDto.getCurrencyFrom())
+                .currencyTo(exchangeDto.getCurrencyTo())
+                .amountFrom(exchangeDto.getAmount())
+                .amountTo(amountTo)
+                .build();
+    }
+
+    private void validate(BindingResult bindingResult) throws ValidationException {
+        if (bindingResult.hasErrors())
+            for (ObjectError e : bindingResult.getAllErrors())
+                throw new ValidationException(e.getDefaultMessage());
     }
 
     private void makeOperation(UserEntity user) {
-        user.setLastOperationDate(new Date(System.currentTimeMillis()));
-        userRepository.save(user);
+        OperationEntity operation = new OperationEntity();
+        operation.setDate(new Date());
+        operation.setUser(user);
+        operationRepository.save(operation);
     }
 
 }

@@ -1,14 +1,12 @@
 package com.raymundo.crypto.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "_currency_price")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 public class CurrencyPriceEntity {
 

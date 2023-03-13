@@ -9,8 +9,6 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
-    Optional<UserEntity> getUserBySecretKey(String key);
-
     Optional<UserEntity> getUserByUsername(String username);
 
     Optional<UserEntity> getUserByEmail(String email);

@@ -1,4 +1,0 @@
-databaseChangeLog:
-    - changeSet:
-        id: 0
-        author: Raymundo

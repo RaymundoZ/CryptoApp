@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface ExchangeRepository extends JpaRepository<ExchangeEntity, Long> {
-    
+
     Optional<ExchangeEntity> getExchangeByCurrencyName(String name);
 
 }
