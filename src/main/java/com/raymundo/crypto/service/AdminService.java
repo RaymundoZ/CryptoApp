@@ -81,9 +81,9 @@ public class AdminService {
 
     public OperationAmountResponse getOperationsAmount(OperationAmountRequest operationAmountDto, BindingResult bindingResult) throws InvalidDateException, ValidationException {
         validate(bindingResult);
-        Date dateFrom = parseDate(operationAmountDto.getDateFrom());
-        Date dateTo = parseDate(operationAmountDto.getDateTo());
-        long amount = operationRepository.findAll().stream().filter(o -> o.getDate().before(dateTo) && o.getDate().after(dateFrom)).count();
+        long dateFrom = parseDate(operationAmountDto.getDateFrom()).getTime();
+        long dateTo = parseDate(operationAmountDto.getDateTo()).getTime();
+        long amount = operationRepository.findAll().stream().mapToLong(o -> o.getDate().getTime()).filter(t -> t <= dateTo && t >= dateFrom).count();
         return OperationAmountResponse.builder()
                 .transactionCount(amount)
                 .build();

@@ -41,7 +41,7 @@ public class OperationsService {
     private OperationRepository operationRepository;
     private JwtService jwtService;
 
-    public DepositResponse makeDeposit(DepositRequest depositDto, BindingResult bindingResult) throws UserNotFoundException, ValidationException {
+    public DepositResponse makeDeposit(DepositRequest depositDto, BindingResult bindingResult, boolean isInner) throws UserNotFoundException, ValidationException {
         validate(bindingResult);
         UserEntity user = userRepository.getUserByUsername(jwtService.getUsername(depositDto.getSecretKey().getSecretKey())).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
         Map<String, String> result = new HashMap<>();
@@ -62,13 +62,16 @@ public class OperationsService {
                 currencyRepository.save(currency);
             }
         });
-        makeOperation(user);
+
+        if(!isInner)
+            makeOperation(user);
+
         return DepositResponse.builder()
                 .values(result)
                 .build();
     }
 
-    public WithdrawResponse makeWithdraw(WithdrawRequest withdraw, BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
+    public WithdrawResponse makeWithdraw(WithdrawRequest withdraw, BindingResult bindingResult, boolean isInner) throws UserNotFoundException, WithdrawException, ValidationException {
         validate(bindingResult);
         UserEntity user = userRepository.getUserByUsername(jwtService.getUsername(withdraw.getSecretKey().getSecretKey())).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
         Optional<CurrencyEntity> optional = currencyRepository.getCurrencyByUserAndName(user, withdraw.getCurrency());
@@ -82,7 +85,8 @@ public class OperationsService {
             throw new WithdrawException(CURRENCY_NOT_FOUND_MESSAGE);
         currencyRepository.save(optional.get());
 
-        makeOperation(user);
+        if(!isInner)
+            makeOperation(user);
 
         return WithdrawResponse.builder()
                 .values(Map.of(optional.get().getName(), String.valueOf(optional.get().getValue())))
@@ -103,14 +107,14 @@ public class OperationsService {
                         .build())
                 .currency(exchangeDto.getCurrencyFrom())
                 .count(exchangeDto.getAmount())
-                .build(), bindingResult);
+                .build(), bindingResult, true);
         Double amountTo = currencyPrice.getPrice() * exchangeDto.getAmount();
         makeDeposit(DepositRequest.builder()
                 .secretKey(SecretKeyDto.builder()
                         .secretKey(exchangeDto.getSecretKey().getSecretKey())
                         .build())
                 .values(exchangeDto.getCurrencyTo(), String.valueOf(amountTo))
-                .build(), bindingResult);
+                .build(), bindingResult, true);
 
         makeOperation(user);
 

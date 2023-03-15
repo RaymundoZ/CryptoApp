@@ -32,13 +32,13 @@ public class OperationsController {
     @PostMapping(value = "/deposit")
     public ResponseEntity<DepositResponse> makeDeposit(@RequestBody @Valid DepositRequest depositDto,
                                                        BindingResult bindingResult) throws UserNotFoundException, ValidationException {
-        return ResponseEntity.ok(operationsService.makeDeposit(depositDto, bindingResult));
+        return ResponseEntity.ok(operationsService.makeDeposit(depositDto, bindingResult, false));
     }
 
     @PostMapping(value = "/withdraw")
     public ResponseEntity<WithdrawResponse> makeWithDraw(@RequestBody @Valid WithdrawRequest withdrawDto,
                                                          BindingResult bindingResult) throws UserNotFoundException, WithdrawException, ValidationException {
-        return ResponseEntity.ok(operationsService.makeWithdraw(withdrawDto, bindingResult));
+        return ResponseEntity.ok(operationsService.makeWithdraw(withdrawDto, bindingResult, false));
     }
 
     @PostMapping(value = "/exchange")
