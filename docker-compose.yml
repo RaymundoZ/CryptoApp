@@ -1,0 +1,24 @@
+version: '3.1'
+
+services:
+    db:
+        container_name: database
+        image: 'postgres:15'
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=1111
+            - POSTGRES_USER=cryptoadmin
+            - POSTGRES_DB=cryptoapp
+            - PGDATA=/var/lib/postgresql/data/pgdata
+        volumes:
+            - ./docker_db:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+
+    app:
+        container_name: cryptoapp
+        build: .
+        ports:
+            - "5000:5000"
+        depends_on:
+            - db
