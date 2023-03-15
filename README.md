@@ -178,6 +178,13 @@
 
 ---
 
+## Для проверки эндпоинтов, предназначенных для роли админа, следует использовать специальный ключ в параметре `secret_key`
+В системе по умолчанию генерируется пользователь с ролью админа.
+При запуске приложения в консоли выводится строка типа:
+`Your admin secret_key is: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTY3ODg0MjAxM30.PIMIrhSX5QNwYkZybhij4FibQ_9RwlAsQn4FlE6ZVg1FcsP2-QYWU1ZcPPd2mQtDadJc0FhQiyDAkkaVK2Ljeg`
+
+---
+
 ### Изменить курс валют
 
 ` Post /change_exchange`
